@@ -3,6 +3,8 @@
 #include <sys/msg.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/mman.h>
+#include <signal.h>
 
 
 struct msgbuf
@@ -99,6 +101,7 @@ long long* solve_paral(size_t const size, int const matrix[size][size]){
     // processes are started
     size_t part;
     part = !(size % proc_count) ? size / proc_count : (size + proc_count - 1) / proc_count; // else: round up int
+    
     for(int i = 0; i < proc_count; ++i)
     {
         long long limits[2];
@@ -112,25 +115,27 @@ long long* solve_paral(size_t const size, int const matrix[size][size]){
         send_message(msgqid, &qbuf, qtype, limits);
         //printf("SENT to i = %d\nleft = %d\nright = %d\n==========================\n", i, limits[0], limits[1]);
     }
-    long long *sh_res = calloc(size * 2 - 1, sizeof(long long));
-    size_t count_done = proc_count;
-    for (size_t i = 0; i < (part + size - 1);)
-    {
-        read_message(msgqid, &qbuf, qtype + 1);
-        long long index = qbuf.mdata[0];
-        long long value = qbuf.mdata[1];
-        if (index == -1)
+    long long* sh_res = mmap(NULL, (size * 2 - 1 ) * sizeof(long long), PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    pid_t checker_pid = fork();
+    if (!checker_pid){
+        size_t count_done = proc_count;
+        for (;;)
         {
-            if (!--count_done)
-                break;
-        }
-        else
-        {
-            // printf("RECIEVED %d %d\n", index, value);
-            sh_res[index] += value;
+            read_message(msgqid, &qbuf, qtype + 1);
+            long long index = qbuf.mdata[0];
+            long long value = qbuf.mdata[1];
+            if (index == -1)
+            {
+                if (!--count_done)
+                    exit(0);
+            }
+            else
+            {
+                //printf("RECIEVED %d %d\n", index, value);
+                sh_res[index] += value;
+            }
         }
     }
-
     char is_ok = 1;
     for (int i = 1; i < proc_count; ++i)
     {
@@ -144,6 +149,11 @@ long long* solve_paral(size_t const size, int const matrix[size][size]){
         }
     }
     if (!is_ok) {
+        kill(checker_pid, SIGKILL);
+        return NULL;
+    }
+    status = waitpid(checker_pid, &stat, 0);
+    if(status != checker_pid){
         return NULL;
     }
     
@@ -169,9 +179,10 @@ long long *get_sums(size_t size, int const matrix[size][size])
     return res;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-    size_t size = 100;
+    size_t size = 5;
+    scanf("%d",&size);
     int matrix[size][size];
     for(int i = 0; i < size; ++i){
         for(int j = 0; j < size; ++j){
@@ -183,11 +194,13 @@ int main()
     for(int k = 0; k < size*2-1; ++k){
         printf("%d\n", res[k]);
     }
+    free(res);
     printf("\n=====================\nPARAL METHOD:\n");
-    res = solve_paral(size, matrix);
-    if(!res) return 1;
+    long long* res1 = solve_paral(size, matrix);
+    if(!res1) return 1;
     for(int k = 0; k < size*2-1; ++k){
-        printf("%d\n", res[k]);
+        //printf("%d\n", res[k]);
     }
+    free(res1);
     return 0;
 }
