@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <signal.h>
+#include <stdlib.h>
 
 
 struct msgbuf
@@ -31,7 +32,7 @@ int read_message(int qid, struct msgbuf *qbuf, long type)
     return 0;
 }
 
-long long* solve_paral(size_t const size, int const matrix[size][size]){
+long long* solve_paral(size_t const size, int** const matrix){
     size_t proc_count = sysconf(_SC_NPROCESSORS_ONLN);
     printf("Cores: %d\n====================\n", proc_count);
 
@@ -163,7 +164,7 @@ long long* solve_paral(size_t const size, int const matrix[size][size]){
     }
     return sh_res;
 }
-long long *get_sums(size_t size, int const matrix[size][size])
+long long *get_sums(size_t size, int** const matrix)
 {
     long long sum = 0;
     long long *res = calloc(size * 2 - 1, sizeof(long long));
@@ -181,12 +182,16 @@ long long *get_sums(size_t size, int const matrix[size][size])
 
 int main(int argc, char* argv[])
 {
-    size_t size = 5;
-    scanf("%d",&size);
-    int matrix[size][size];
+    size_t size = 10000;
+    //scanf("%d",&size);
+    int** matrix = (int**)malloc(size * sizeof(int*));
+    for (int index = 0; index < size; ++index)
+    {
+        matrix[index] = (int *)malloc(size * sizeof(int));
+    }
     for(int i = 0; i < size; ++i){
         for(int j = 0; j < size; ++j){
-            matrix[i][j] = i+j;
+            matrix[i][j] = i;
         }
     }
     long long* res = get_sums(size, matrix);
@@ -201,6 +206,12 @@ int main(int argc, char* argv[])
     for(int k = 0; k < size*2-1; ++k){
         //printf("%d\n", res[k]);
     }
-    free(res1);
+    printf("Done");
+    munmap(res1, (size*2-1)*sizeof(long long));
+    for (int index = 0; index < size; ++index)
+    {
+        free(matrix[index]);
+    }
+    free(matrix);
     return 0;
 }
