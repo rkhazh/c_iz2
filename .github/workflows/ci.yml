@@ -1,0 +1,46 @@
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: rkhazh/first_dock
+    steps:
+    - uses: actions/checkout@v2 
+    - run: make build
+    - name: Build project
+      uses: actions/upload-artifact@v2
+      with:
+        path: build/iz1
+
+  sync:
+    runs-on: ubuntu-latest
+    container: rkhazh/first_dock
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2 
+      - run: make sync
+
+
+  async:
+    runs-on: ubuntu-latest
+    container: rkhazh/first_dock
+    needs: [sync]
+    steps:
+      - uses: actions/checkout@v2 
+      - run: make async
+
+  test:
+    runs-on: ubuntu-latest
+    container: rkhazh/first_dock
+    needs: [async]
+    steps:
+      - uses: actions/checkout@v2 
+      - run: make test
+      
+  lcov:
+    runs-on: ubuntu-latest
+    container: rkhazh/first_dock
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v2 
+      - run: make lcov
