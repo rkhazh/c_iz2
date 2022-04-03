@@ -9,7 +9,8 @@ jobs:
     - run: make build
     - name: Build project
       uses: actions/upload-artifact@v2
-      path: build/sync/iz2
+      with:
+        path: build/sync/iz2
 
   sync:
     runs-on: ubuntu-latest
