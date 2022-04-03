@@ -6,9 +6,7 @@
 int main(int argc, char *argv[])
 {
     size_t size = 10;
-
-    // init matrix
-
+    //init matrix
     int **matrix = (int **)malloc(size * sizeof(int *));
     if (matrix == NULL)
     {

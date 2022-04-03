@@ -5,7 +5,7 @@
 long long *get_sums(size_t size, int **const matrix)
 {
     printf("SINGLEMODE\n");
-    long long sum = 0;
+    // rows + columns = diagonals count + 1 => diagonals count = rows + columns - 1
     long long *res = calloc(size * 2 - 1, sizeof(long long));
     if (!res)
         return NULL;
@@ -22,6 +22,13 @@ long long *get_sums(size_t size, int **const matrix)
 
 int free_res(long long *res, size_t size)
 {
+    /* 
+    Да, я знаю, что free(res) можно сделать и без этой функции,
+    но она тут нужна, так как в многопроцессной реализации необходимо 
+    вызывать не free(), а munmap(). Эта функция позволяет юзеру не заморачиваться
+    над тем, какую реализацию библиотеки он использует.
+    Интерфейс в данном случае абсолютно одинаковый.
+    */
     free(res);
     res = NULL;
     return 0;
