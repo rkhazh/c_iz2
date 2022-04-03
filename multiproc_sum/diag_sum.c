@@ -100,6 +100,10 @@ void checker(int const proc_count, int const msgqid, struct mymsgbuf qbuf, int c
 
 long long *get_sums(size_t const size, int **const matrix)
 {
+    if (!size || !matrix)
+    {
+        return NULL;
+    }
     size_t proc_count = sysconf(_SC_NPROCESSORS_ONLN);
     printf("Cores: %d\n====================\n", proc_count);
 
